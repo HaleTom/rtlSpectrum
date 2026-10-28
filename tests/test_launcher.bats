@@ -46,3 +46,9 @@ teardown() {
   [ "$status" -eq 0 ]
   [[ "$output" == *"-jar target/rtlSpectrum_linux.jar --help"* ]]
 }
+
+@test "multiple naked files and subtract-equals pass through in order" {
+  run "$SCRIPT" base.csv s1.csv --subtract=x.csv s2.csv
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"base.csv s1.csv --subtract=x.csv s2.csv"* ]]
+}
