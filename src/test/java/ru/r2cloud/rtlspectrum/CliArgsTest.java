@@ -29,47 +29,84 @@ public class CliArgsTest {
 	}
 
 	@Test
-	public void testMoreThanOneNakedArgIsError() {
-		CliArgs.Parsed parsed = CliArgs.parse(new String[] { "a.csv", "b.csv" });
-		assertTrue(parsed.hasError());
+	public void testMultipleNakedFilesBecomeAddsInOrder() {
+		CliArgs.Parsed parsed = CliArgs.parse(new String[] { "a.csv", "b.csv", "c.csv" });
+		assertFalse(parsed.hasError());
+		assertEquals("a.csv", parsed.getBaseFile().getPath());
+		assertEquals(2, parsed.getOperations().size());
+		assertEquals(CliArgs.OpType.ADD, parsed.getOperations().get(0).getType());
+		assertEquals("b.csv", parsed.getOperations().get(0).getFile().getPath());
+		assertEquals(CliArgs.OpType.ADD, parsed.getOperations().get(1).getType());
+		assertEquals("c.csv", parsed.getOperations().get(1).getFile().getPath());
 	}
 
 	@Test
-	public void testAddRequiresBaseFile() {
+	public void testAddFlagWasRemoved() {
 		CliArgs.Parsed parsed = CliArgs.parse(new String[] { "--add", "b.csv" });
 		assertTrue(parsed.hasError());
+		assertTrue(parsed.getError().contains("removed"));
 	}
 
 	@Test
-	public void testSubtractRequiresBaseFile() {
-		CliArgs.Parsed parsed = CliArgs.parse(new String[] { "--subtract", "b.csv" });
-		assertTrue(parsed.hasError());
-	}
-
-	@Test
-	public void testAddWithoutFileIsError() {
+	public void testBareAddFlagWasRemoved() {
 		CliArgs.Parsed parsed = CliArgs.parse(new String[] { "a.csv", "--add" });
 		assertTrue(parsed.hasError());
+		assertTrue(parsed.getError().contains("removed"));
 	}
 
 	@Test
-	public void testSubtractWithoutFileIsError() {
+	public void testSubtractEqualsFormWorks() {
+		CliArgs.Parsed parsed = CliArgs.parse(new String[] { "a.csv", "--subtract=s.csv" });
+		assertFalse(parsed.hasError());
+		assertEquals(1, parsed.getOperations().size());
+		assertEquals(CliArgs.OpType.SUBTRACT, parsed.getOperations().get(0).getType());
+		assertEquals("s.csv", parsed.getOperations().get(0).getFile().getPath());
+	}
+
+	@Test
+	public void testSubtractEqualsFormRequiresBaseFile() {
+		CliArgs.Parsed parsed = CliArgs.parse(new String[] { "--subtract=s.csv" });
+		assertTrue(parsed.hasError());
+		assertTrue(parsed.getError().contains("base file"));
+	}
+
+	@Test
+	public void testBareSubtractIsError() {
 		CliArgs.Parsed parsed = CliArgs.parse(new String[] { "a.csv", "--subtract" });
 		assertTrue(parsed.hasError());
 	}
 
 	@Test
-	public void testBasePlusAddInOrder() {
-		CliArgs.Parsed parsed = CliArgs.parse(new String[] { "base.csv", "--add", "a.csv", "--subtract", "s.csv", "--add", "b.csv" });
+	public void testSubtractSpaceFormIsError() {
+		CliArgs.Parsed parsed = CliArgs.parse(new String[] { "a.csv", "--subtract", "s.csv" });
+		assertTrue(parsed.hasError());
+	}
+
+	@Test
+	public void testSubtractEmptyValueIsError() {
+		CliArgs.Parsed parsed = CliArgs.parse(new String[] { "a.csv", "--subtract=" });
+		assertTrue(parsed.hasError());
+	}
+
+	@Test
+	public void testSubtractValueMayStartWithDash() {
+		CliArgs.Parsed parsed = CliArgs.parse(new String[] { "a.csv", "--subtract=-x.csv" });
+		assertFalse(parsed.hasError());
+		assertEquals("-x.csv", parsed.getOperations().get(0).getFile().getPath());
+	}
+
+	@Test
+	public void testNakedAndSubtractMixedInOrder() {
+		CliArgs.Parsed parsed = CliArgs.parse(new String[] { "base.csv", "s1.csv", "--subtract=x.csv", "s2.csv" });
 		assertFalse(parsed.hasError());
 		assertEquals("base.csv", parsed.getBaseFile().getPath());
 		assertEquals(3, parsed.getOperations().size());
 		assertEquals(CliArgs.OpType.ADD, parsed.getOperations().get(0).getType());
-		assertEquals("a.csv", parsed.getOperations().get(0).getFile().getPath());
+		assertEquals("s1.csv", parsed.getOperations().get(0).getFile().getPath());
 		assertEquals(CliArgs.OpType.SUBTRACT, parsed.getOperations().get(1).getType());
-		assertEquals("s.csv", parsed.getOperations().get(1).getFile().getPath());
+		assertEquals("x.csv", parsed.getOperations().get(1).getFile().getPath());
 		assertEquals(CliArgs.OpType.ADD, parsed.getOperations().get(2).getType());
-		assertEquals("b.csv", parsed.getOperations().get(2).getFile().getPath());
+		assertEquals("s2.csv", parsed.getOperations().get(2).getFile().getPath());
 	}
 
 	@Test
@@ -107,22 +144,16 @@ public class CliArgsTest {
 
 	@Test
 	public void testMissingBaseErrorMentionsUsage() {
-		CliArgs.Parsed parsed = CliArgs.parse(new String[] { "--add", "b.csv" });
+		CliArgs.Parsed parsed = CliArgs.parse(new String[] { "--subtract=b.csv" });
 		assertTrue(parsed.hasError());
 		assertTrue(parsed.getError().contains("base file"));
 	}
 
 	@Test
-	public void testFlagLikeValueAfterAddIsRejected() {
-		CliArgs.Parsed parsed = CliArgs.parse(new String[] { "a.csv", "--add", "--subtract" });
-		assertTrue(parsed.hasError());
-	}
-
-	@Test
 	public void testUsageMentionsCommands() {
 		String usage = CliArgs.usage();
-		assertTrue(usage.contains("--add"));
-		assertTrue(usage.contains("--subtract"));
+		assertTrue(usage.contains("--subtract="));
 		assertTrue(usage.contains("--help"));
+		assertFalse(usage.contains("--add "));
 	}
 }
