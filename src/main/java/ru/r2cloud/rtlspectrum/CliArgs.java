@@ -66,14 +66,14 @@ public class CliArgs {
 				result.helpRequested = true;
 				return result;
 			} else if (arg.equals("--add")) {
-				if (i + 1 >= args.length) {
+				if (i + 1 >= args.length || args[i + 1].charAt(0) == '-') {
 					result.error = "--add requires a file argument";
 					return result;
 				}
 				result.operations.add(new Operation(OpType.ADD, new File(args[i + 1])));
 				i += 2;
 			} else if (arg.equals("--subtract")) {
-				if (i + 1 >= args.length) {
+				if (i + 1 >= args.length || args[i + 1].charAt(0) == '-') {
 					result.error = "--subtract requires a file argument";
 					return result;
 				}

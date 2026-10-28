@@ -92,6 +92,33 @@ public class CliArgsTest {
 	}
 
 	@Test
+	public void testJarFlagIsRejectedAsUnknownOption() {
+		// --jar is a launcher-script flag; the app must not accept it
+		CliArgs.Parsed parsed = CliArgs.parse(new String[] { "--jar", "x.jar", "a.csv" });
+		assertTrue(parsed.hasError());
+	}
+
+	@Test
+	public void testHelpShortCircuitsOverFileArgs() {
+		CliArgs.Parsed parsed = CliArgs.parse(new String[] { "a.csv", "--help" });
+		assertTrue(parsed.isHelpRequested());
+		assertFalse(parsed.hasError());
+	}
+
+	@Test
+	public void testMissingBaseErrorMentionsUsage() {
+		CliArgs.Parsed parsed = CliArgs.parse(new String[] { "--add", "b.csv" });
+		assertTrue(parsed.hasError());
+		assertTrue(parsed.getError().contains("base file"));
+	}
+
+	@Test
+	public void testFlagLikeValueAfterAddIsRejected() {
+		CliArgs.Parsed parsed = CliArgs.parse(new String[] { "a.csv", "--add", "--subtract" });
+		assertTrue(parsed.hasError());
+	}
+
+	@Test
 	public void testUsageMentionsCommands() {
 		String usage = CliArgs.usage();
 		assertTrue(usage.contains("--add"));
